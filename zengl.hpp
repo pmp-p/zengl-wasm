@@ -499,23 +499,27 @@ struct IntPair {
     int y;
 };
 
-int min(int a, int b) {
+static int min(int a, int b) {
     return a < b ? a : b;
 }
 
-bool is_uniform_variable(int t) {
+static int max(int a, int b) {
+    return a > b ? a : b;
+}
+
+static bool is_uniform_variable(int t) {
     return (0x1404 <= t && t <= 0x8B5C) || (0x8B65 <= t && t <= 0x8B6A) || (0x8DC6 <= t && t <= 0x8DC8) || (0x8F46 <= t && t <= 0x8FFE);
 }
 
-bool is_uniform_sampler(int t) {
+static bool is_uniform_sampler(int t) {
     return (0x8B5D <= t && t <= 0x8B64) || (0x8DC0 <= t && t <= 0x8DC5) || (0x8DC9 <= t && t <= 0x8DD8) || (0x900C <= t && t <= 0x900F) || (0x9108 <= t && t <= 0x910D);
 }
 
-bool is_uniform_image(int t) {
+static bool is_uniform_image(int t) {
     return 0x904C <= t && t <= 0x906C;
 }
 
-VertexFormat get_vertex_format(const char * format) {
+static VertexFormat get_vertex_format(const char * format) {
     if (!strcmp(format, "uint8x2")) return {GL_UNSIGNED_BYTE, 2, false, true};
     if (!strcmp(format, "uint8x4")) return {GL_UNSIGNED_BYTE, 4, false, true};
     if (!strcmp(format, "sint8x2")) return {GL_BYTE, 2, false, true};
@@ -549,7 +553,7 @@ VertexFormat get_vertex_format(const char * format) {
     return {};
 }
 
-ImageFormat get_image_format(const char * format) {
+static ImageFormat get_image_format(const char * format) {
     if (!strcmp(format, "r8unorm")) return {GL_R8, GL_RED, GL_UNSIGNED_BYTE, 1, 1, GL_COLOR, true, 'f', 1};
     if (!strcmp(format, "rg8unorm")) return {GL_RG8, GL_RG, GL_UNSIGNED_BYTE, 2, 2, GL_COLOR, true, 'f', 1};
     if (!strcmp(format, "rgba8unorm")) return {GL_RGBA8, GL_RGBA, GL_UNSIGNED_BYTE, 4, 4, GL_COLOR, true, 'f', 1};
@@ -589,7 +593,7 @@ ImageFormat get_image_format(const char * format) {
     return {};
 }
 
-int get_topology(const char * topology) {
+static int get_topology(const char * topology) {
     if (!strcmp(topology, "points")) return GL_POINTS;
     if (!strcmp(topology, "lines")) return GL_LINES;
     if (!strcmp(topology, "line_loop")) return GL_LINE_LOOP;
@@ -600,7 +604,7 @@ int get_topology(const char * topology) {
     return -1;
 }
 
-int topology_converter(PyObject * arg, int * value) {
+static int topology_converter(PyObject * arg, int * value) {
     if (!PyUnicode_CheckExact(arg)) {
         PyErr_Format(PyExc_TypeError, "topology must be a string");
         return 0;
@@ -614,7 +618,7 @@ int topology_converter(PyObject * arg, int * value) {
     return 1;
 }
 
-int count_mipmaps(int width, int height) {
+static int count_mipmaps(int width, int height) {
     int size = width > height ? width : height;
     for (int i = 0; i < 32; ++i) {
         if (size <= (1 << i)) {
@@ -624,7 +628,7 @@ int count_mipmaps(int width, int height) {
     return 32;
 }
 
-void remove_dict_value(PyObject * dict, PyObject * obj) {
+static void remove_dict_value(PyObject * dict, PyObject * obj) {
     PyObject * key = NULL;
     PyObject * value = NULL;
     Py_ssize_t pos = 0;
@@ -636,12 +640,12 @@ void remove_dict_value(PyObject * dict, PyObject * obj) {
     }
 }
 
-void * new_ref(void * obj) {
+static void * new_ref(void * obj) {
     Py_INCREF(obj);
     return obj;
 }
 
-bool is_int_pair(PyObject * obj) {
+static bool is_int_pair(PyObject * obj) {
     return (
         PySequence_Check(obj) && PySequence_Size(obj) == 2 &&
         PyLong_CheckExact(PySequence_GetItem(obj, 0)) &&
@@ -649,7 +653,7 @@ bool is_int_pair(PyObject * obj) {
     );
 }
 
-bool is_viewport(PyObject * obj) {
+static bool is_viewport(PyObject * obj) {
     return (
         PySequence_Check(obj) && PySequence_Size(obj) == 4 &&
         PyLong_CheckExact(PySequence_GetItem(obj, 0)) &&
@@ -659,14 +663,14 @@ bool is_viewport(PyObject * obj) {
     );
 }
 
-IntPair to_int_pair(PyObject * obj) {
+static IntPair to_int_pair(PyObject * obj) {
     IntPair res = {};
     res.x = PyLong_AsLong(PySequence_GetItem(obj, 0));
     res.y = PyLong_AsLong(PySequence_GetItem(obj, 1));
     return res;
 }
 
-Viewport to_viewport(PyObject * obj) {
+static Viewport to_viewport(PyObject * obj) {
     Viewport res = {};
     res.x = PyLong_AsLong(PySequence_GetItem(obj, 0));
     res.y = PyLong_AsLong(PySequence_GetItem(obj, 1));
@@ -675,11 +679,7 @@ Viewport to_viewport(PyObject * obj) {
     return res;
 }
 
-int max(int a, int b) {
-    return a > b ? a : b;
-}
-
-void * load_opengl_function(PyObject * loader, const char * method) {
+static void * load_opengl_function(PyObject * loader, const char * method) {
     if (PyObject_HasAttrString(loader, "load_opengl_function")) {
         PyObject * res = PyObject_CallMethod(loader, "load_opengl_function", "s", method);
         if (!res) {
@@ -696,7 +696,7 @@ void * load_opengl_function(PyObject * loader, const char * method) {
     return PyLong_AsVoidPtr(res);
 }
 
-GLMethods load_gl(PyObject * loader) {
+static GLMethods load_gl(PyObject * loader) {
     GLMethods res = {};
     PyObject * missing = PyList_New(0);
 
