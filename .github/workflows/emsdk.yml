@@ -1,0 +1,26 @@
+name: CI
+
+on: [workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ubuntu-22.04
+    env:
+      # pin SDK version to the latest, update manually
+      SDK_VERSION: 3.1.32.0
+      SDK_ARCHIVE: python3.11-wasm-sdk-Ubuntu-22.04.tar.lz4
+      SDKROOT: /opt/python-wasm-sdk
+      PYBUILD: 3.11
+
+    - name: Install python-wasm-sdk
+      run: |
+        sudo apt-get install lz4
+        echo https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE
+        curl -sL --retry 5 https://github.com/pygame-web/python-wasm-sdk/releases/download/$SDK_VERSION/$SDK_ARCHIVE | tar xvP --use-compress-program=lz4
+
+      working-directory: /opt
+
+    - name: Build WASM with emsdk
+      run: |
+        ${SDKROOT}/python3-wasm setup.py build
+

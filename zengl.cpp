@@ -577,7 +577,7 @@ static GLMethods load_gl(PyObject * loader) {
     GLMethods res = {};
     PyObject * missing = PyList_New(0);
 
-    #define check(name) if (!res.name) { if (PyErr_Occurred()) return {}; PyList_Append(missing, PyUnicode_FromString("gl" # name)); }
+    #define check(name) if (!res.name) { if (PyErr_Occurred()) PyList_Append(missing, PyUnicode_FromString("gl" # name)); }
     #define load(name) res.name = (decltype(res.name))load_opengl_function(loader, "gl" # name); check(name)
 
     load(CullFace);
@@ -616,8 +616,10 @@ static GLMethods load_gl(PyObject * loader) {
     load(LinkProgram);
     load(ShaderSource);
     load(UseProgram);
+#if !defined(__EMSCRIPTEN__)
     load(Enablei);
     load(Disablei);
+#endif
     load(ClearBufferiv);
     load(ClearBufferuiv);
     load(ClearBufferfv);
@@ -636,6 +638,7 @@ static GLMethods load_gl(PyObject * loader) {
     load(DeleteSamplers);
     load(SamplerParameteri);
     load(SamplerParameterf);
+#if !defined(__EMSCRIPTEN__)
     load(BlendEquationSeparatei);
     load(BlendFunci);
     load(BlendFuncSeparatei);
@@ -702,6 +705,7 @@ static GLMethods load_gl(PyObject * loader) {
     load(VertexArrayAttribIFormat);
     load(VertexArrayBindingDivisor);
     load(CreateSamplers);
+#endif
 
     #undef load
     #undef check
@@ -1675,12 +1679,12 @@ static Context * meth_context(PyObject * self, PyObject * vargs, PyObject * kwar
         "version", gl.GetString(GL_VERSION),
         "glsl", gl.GetString(GL_SHADING_LANGUAGE_VERSION)
     );
-
+#if !defined(__EMSCRIPTEN__)
     gl.Enable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
     gl.Enable(GL_PROGRAM_POINT_SIZE);
     gl.Enable(GL_TEXTURE_CUBE_MAP_SEAMLESS);
     gl.Enable(GL_FRAMEBUFFER_SRGB);
-
+#endif
     Context * res = PyObject_New(Context, module_state->Context_type);
     res->gc_prev = (GCHeader *)res;
     res->gc_next = (GCHeader *)res;
@@ -1902,9 +1906,33 @@ static Image * Context_meth_image(Context * self, PyObject * vargs, PyObject * k
         gl.CreateRenderbuffers(1, (unsigned *)&image);
         gl.NamedRenderbufferStorageMultisample(image, samples > 1 ? samples : 0, fmt.internal_format, width, height);
     } else {
+puts("1909 ERROR");
+/* THAST WAS OK ON 1.10.2
+        gl.GenTextures(1, (unsigned *)&image);
+        gl.ActiveTexture(self->default_texture_unit);
+        gl.BindTexture(target, image);
+        gl.TexParameteri(target, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        gl.TexParameteri(target, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        if (cubemap) {
+            int padded_row = (width * format.pixel_size + 3) & ~3;
+            int stride = padded_row * height;
+            for (int i = 0; i < 6; ++i) {
+                int face = GL_TEXTURE_CUBE_MAP_POSITIVE_X + i;
+                char * ptr = view.buf ? (char *)view.buf + stride * i : NULL;
+                gl.TexImage2D(face, 0, format.internal_format, width, height, 0, format.format, format.type, ptr);
+            }
+        } else if (array) {
+            gl.TexImage3D(target, 0, format.internal_format, width, height, array, 0, format.format, format.type, view.buf);
+        } else {
+            gl.TexImage2D(target, 0, format.internal_format, width, height, 0, format.format, format.type, view.buf);
+        }
+*/
+
+/* NOT
         gl.CreateTextures(target, 1, (unsigned *)&image);
         gl.TextureParameteri(image, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
         gl.TextureParameteri(image, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+
         if (cubemap) {
             gl.TextureStorage2D(image, levels, fmt.internal_format, width, height);
             if (view.buf) {
@@ -1921,6 +1949,7 @@ static Image * Context_meth_image(Context * self, PyObject * vargs, PyObject * k
                 gl.TextureSubImage2D(image, 0, 0, 0, width, height, fmt.format, fmt.type, view.buf);
             }
         }
+*/
     }
 
     ClearValue clear_value = {};
@@ -1948,22 +1977,26 @@ static Image * Context_meth_image(Context * self, PyObject * vargs, PyObject * k
     res->target = target;
     res->renderbuffer = renderbuffer;
     res->max_level = 0;
-
+puts("1980");
     res->framebuffer = NULL;
     if (!cubemap && !array) {
         if (fmt.color) {
+puts("1983 ERROR");
+#if !defined(__EMSCRIPTEN__)
             PyObject * face = PyObject_CallMethod((PyObject *)res, "face", NULL);
             PyObject * attachments = Py_BuildValue("((ii)(N)O)", width, height, face, Py_None);
             res->framebuffer = build_framebuffer(self, attachments);
             Py_DECREF(attachments);
+#endif
         } else {
+puts("1990");
             PyObject * face = PyObject_CallMethod((PyObject *)res, "face", NULL);
             PyObject * attachments = Py_BuildValue("((ii)()N)", width, height, face);
             res->framebuffer = build_framebuffer(self, attachments);
             Py_DECREF(attachments);
         }
     }
-
+puts("1999");
     if (data != Py_None) {
         PyBuffer_Release(&view);
     }
