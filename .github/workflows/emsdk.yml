@@ -1,4 +1,4 @@
-name: CI
+name: Build WASM (Emscripten)
 
 on: [workflow_dispatch]
 
@@ -12,6 +12,9 @@ jobs:
       SDKROOT: /opt/python-wasm-sdk
       PYBUILD: 3.11
 
+    steps:
+    - uses: actions/checkout@v3.3.0
+
     - name: Install python-wasm-sdk
       run: |
         sudo apt-get install lz4
@@ -23,4 +26,11 @@ jobs:
     - name: Build WASM with emsdk
       run: |
         ${SDKROOT}/python3-wasm setup.py bdist_wheel
+
+    # Upload the generated files under github actions assets section
+    - name: Upload dist
+      uses: actions/upload-artifact@v3
+      with:
+        name: zengl-wasm-dist
+        path: ./dist/*
 
