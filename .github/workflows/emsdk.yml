@@ -22,5 +22,5 @@ jobs:
 
     - name: Build WASM with emsdk
       run: |
-        ${SDKROOT}/python3-wasm setup.py build
+        ${SDKROOT}/python3-wasm setup.py bdist_wheel
 
