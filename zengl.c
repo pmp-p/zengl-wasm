@@ -1,6 +1,6 @@
 #include <Python.h>
 #include <structmember.h>
-
+#define EXTERN_GL 1
 #define MAX_ATTACHMENTS 8
 #define MAX_BUFFER_BINDINGS 8
 #define MAX_SAMPLER_BINDINGS 16

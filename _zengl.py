@@ -305,7 +305,13 @@ def loader(headless=False):
 
         return glcontext.default_backend()(glversion=330, mode="standalone")
 
-    if sys.platform == "emscripten" and "pyodide" in sys.modules:
+    if sys.platform == "emscripten":
+        if "pygbag" in sys.modules:
+            print("ZenGL: emscripten/pygbag (pyodide emulation )")
+            import pyodide
+        elif "pyodide" in sys.modules:
+            print("ZenGL: --------- emscripten/pyodide ---------")
+
         import js
         import pyodide_js
         import _zengl_js
@@ -325,16 +331,10 @@ def loader(headless=False):
             pyodide_js.canvas.setCanvas3D(canvas)
 
         gl = canvas.getContext(
-            "webgl2",
-            powerPreference="high-performance",
-            premultipliedAlpha=False,
-            antialias=False,
-            alpha=False,
-            depth=False,
-            stencil=False,
+            "webgl2", js.window.JSON.parse('{"powerPreference": "high-performance", "premultipliedAlpha": false, "antialias": false, "alpha": false, "depth": false, "stencil": false}')
         )
 
-        callback = js.eval(_zengl_js.zengl_js)
+        callback = js.window.eval(_zengl_js.zengl_js)
         symbols = callback(pyodide_js._module, gl)
         pyodide_js._module.mergeLibSymbols(symbols)
 
