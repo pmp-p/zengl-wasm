@@ -3,9 +3,11 @@ import sys
 
 from setuptools import Extension, setup
 
+py_limited_api = False
 extra_compile_args = []
 extra_link_args = []
 define_macros = []
+cmdclass = {}
 
 stubs = {
     "packages": ["zengl-stubs"],
@@ -13,16 +15,11 @@ stubs = {
     "include_package_data": True,
 }
 
-if sys.platform.startswith("linux"):
-    extra_compile_args = []
-
 if sys.platform.startswith("darwin"):
-    extra_compile_args = ["-Wno-writable-strings"]
+    extra_compile_args += ["-Wno-writable-strings"]
 
 if os.getenv("PYODIDE"):
-    define_macros = [
-        ("EXTERN_GL", None),
-    ]
+    define_macros += [("EXTERN_GL", None)]
 
 if os.getenv("ZENGL_COVERAGE"):
     extra_compile_args += ["-O0", "--coverage"]
@@ -47,12 +44,29 @@ if os.getenv("ZENGL_WARNINGS"):
 if os.getenv("ZENGL_NO_STUBS"):
     stubs = {}
 
+if sys.hexversion >= 0x030B0000:
+    from wheel.bdist_wheel import bdist_wheel
+
+    class bdist_wheel_abi3(bdist_wheel):
+        def get_tag(self):
+            python, abi, plat = super().get_tag()
+
+            if python.startswith("cp"):
+                return "cp311", "abi3", plat
+
+            return python, abi, plat
+
+    cmdclass = {"cmdclass": {"bdist_wheel": bdist_wheel_abi3}}
+    define_macros += [("Py_LIMITED_API", 0x030B0000)]
+    py_limited_api = True
+
 ext = Extension(
     name="zengl",
     sources=["zengl.c"],
     extra_compile_args=extra_compile_args,
     extra_link_args=extra_link_args,
     define_macros=define_macros,
+    py_limited_api=py_limited_api,
 )
 
 with open("README.md") as readme:
@@ -60,7 +74,7 @@ with open("README.md") as readme:
 
 setup(
     name="zengl",
-    version="2.2.1",
+    version="2.3.0",
     ext_modules=[ext],
     py_modules=["_zengl", "_zengl_js"],
     license="MIT",
@@ -116,5 +130,6 @@ setup(
         "gpu",
         "webgl",
     ],
+    **cmdclass,
     **stubs,
 )

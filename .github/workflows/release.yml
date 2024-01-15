@@ -37,6 +37,9 @@ jobs:
       matrix:
         os: [ubuntu-20.04, windows-2019, macos-11]
 
+    env:
+      CIBW_BUILD: cp38-* cp39-* cp310-* cp312-*
+
     steps:
       - uses: actions/checkout@v3
 

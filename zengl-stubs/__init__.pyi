@@ -138,7 +138,6 @@ ImageFormat = Literal[
     "r32float",
     "rg32float",
     "rgba32float",
-    "rgba8unorm-srgb",
     "depth16unorm",
     "depth24plus",
     "depth24plus-stencil8",
@@ -224,13 +223,6 @@ class BlendSettings(TypedDict, total=False):
     src_alpha: BlendConstant
     dst_alpha: BlendConstant
 
-class DefaultFramebufferInfo(TypedDict):
-    color_bits: Tuple[int, int, int, int]
-    depth_bits: int
-    stencil_bits: int
-    hdr: bool
-    srgb: bool
-
 class Info(TypedDict):
     vendor: str
     renderer: str
@@ -243,7 +235,6 @@ class Info(TypedDict):
     max_vertex_attribs: int
     max_draw_buffers: int
     max_samples: int
-    default_framebuffer: DefaultFramebufferInfo
 
 class ImageFace:
     image: Image
@@ -257,7 +248,6 @@ class ImageFace:
         target_viewport: Viewport | None = None,
         source_viewport: Viewport | None = None,
         filter: bool = True,
-        srgb: bool | None = None,
     ) -> None: ...
 
 class ContextLoader(Protocol):
@@ -265,7 +255,7 @@ class ContextLoader(Protocol):
 
 class Buffer:
     size: int
-    def read(self, size: int | None = None, offset: int = 0, into=None) -> None: ...
+    def read(self, size: int | None = None, offset: int = 0, into=None) -> bytes: ...
     def write(self, data: Data, offset: int = 0) -> None: ...
     def view(self, size: int | None = None, offset: int = 0) -> BufferView: ...
 
@@ -286,16 +276,13 @@ class Image:
         level: int = 0,
     ) -> None: ...
     def mipmaps(self) -> None: ...
-    def read(
-        self, size: Tuple[int, int] | None = None, *, offset: Tuple[int, int] | None = None, into=None
-    ) -> bytes: ...
+    def read(self, size: Tuple[int, int] | None = None, offset: Tuple[int, int] | None = None, into=None) -> bytes: ...
     def blit(
         self,
         target: Image | None = None,
         target_viewport: Viewport | None = None,
         source_viewport: Viewport | None = None,
         filter: bool = True,
-        srgb: bool | None = None,
     ) -> None: ...
 
 class Pipeline:
@@ -317,7 +304,7 @@ class Context:
         self,
         data: Data | None = None,
         size: int | None = None,
-        dynamic: BufferAccess | None = None,
+        access: BufferAccess | None = None,
         index: bool = False,
         uniform: bool = False,
         external: int = 0,
